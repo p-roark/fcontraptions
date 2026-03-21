@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantastic Contraptions</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #1a1a2e;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+#top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: #16213e;
+  border-bottom: 2px solid #0f3460;
+  z-index: 10;
+}
+
+#top-bar h1 {
+  color: #e94560;
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+
+#level-info {
+  color: #a8a8b3;
+  font-size: 14px;
+}
+
+#controls {
+  display: flex;
+  gap: 8px;
+}
+
+#controls button {
+  padding: 8px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+#play-btn {
+  background: #4ecca3;
+  color: #1a1a2e;
+}
+#play-btn:hover { background: #3db88a; }
+#play-btn.running { background: #e94560; }
+#play-btn.running:hover { background: #d63851; }
+
+#reset-btn {
+  background: #533483;
+  color: #fff;
+}
+#reset-btn:hover { background: #6b44a0; }
+
+#clear-btn {
+  background: #0f3460;
+  color: #a8a8b3;
+}
+#clear-btn:hover { background: #1a4a80; color: #fff; }
+
+#next-btn {
+  background: #e94560;
+  color: #fff;
+  display: none;
+}
+#next-btn:hover { background: #d63851; }
+
+#main-area {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+#toolbar {
+  width: 180px;
+  background: #16213e;
+  border-right: 2px solid #0f3460;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#toolbar h3 {
+  color: #4ecca3;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 2px solid transparent;
+  color: #a8a8b3;
+  font-size: 13px;
+}
+
+.tool-item:hover {
+  background: #1a2a50;
+  color: #fff;
+}
+
+.tool-item.selected {
+  border-color: #4ecca3;
+  background: #1a2a50;
+  color: #4ecca3;
+}
+
+.tool-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 18px;
+}
+
+.tool-item[data-tool="select"] .tool-icon { background: #2a2a4e; }
+.tool-item[data-tool="rod"] .tool-icon { background: #8b5e3c; }
+.tool-item[data-tool="wheel"] .tool-icon { background: #3a3a5e; }
+.tool-item[data-tool="motor-wheel"] .tool-icon { background: #5a3a6e; }
+
+#toolbar .help-text {
+  color: #555;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: auto;
+  padding: 8px;
+  border-top: 1px solid #0f3460;
+}
+
+#canvas-container {
+  flex: 1;
+  position: relative;
+}
+
+canvas {
+  display: block;
+}
+
+#win-overlay {
+  display: none;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 20;
+  justify-content: center;
+  align-items: center;
+}
+
+#win-overlay.show {
+  display: flex;
+}
+
+#win-box {
+  background: #16213e;
+  border: 3px solid #4ecca3;
+  border-radius: 16px;
+  padding: 40px 60px;
+  text-align: center;
+}
+
+#win-box h2 {
+  color: #4ecca3;
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+#win-box p {
+  color: #a8a8b3;
+  font-size: 16px;
+  margin-bottom: 24px;
+}
+
+#win-box button {
+  padding: 12px 32px;
+  background: #4ecca3;
+  color: #1a1a2e;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0 8px;
+}
+#win-box button:hover { background: #3db88a; }
+#win-box button.secondary {
+  background: #533483;
+  color: #fff;
+}
+
+#delete-hint {
+  display: none;
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(233, 69, 96, 0.9);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  z-index: 5;
+}
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <h1>Fantastic Contraptions</h1>
+  <span id="level-info">Level 1</span>
+  <div id="controls">
+    <button id="play-btn" onclick="toggleSimulation()">Play</button>
+    <button id="reset-btn" onclick="resetSimulation()">Reset</button>
+    <button id="clear-btn" onclick="clearParts()">Clear All</button>
+    <button id="next-btn" onclick="nextLevel()">Next Level</button>
+  </div>
+</div>
+
+<div id="main-area">
+  <div id="toolbar">
+    <h3>Tools</h3>
+    <div class="tool-item selected" data-tool="select" onclick="selectTool('select')">
+      <div class="tool-icon">&#9995;</div>
+      <div>Select<br><small>Move parts</small></div>
+    </div>
+    <div class="tool-item" data-tool="rod" onclick="selectTool('rod')">
+      <div class="tool-icon">&#9644;</div>
+      <div>Rod<br><small>Click + drag</small></div>
+    </div>
+    <div class="tool-item" data-tool="wheel" onclick="selectTool('wheel')">
+      <div class="tool-icon">&#9711;</div>
+      <div>Wheel<br><small>Free spinning</small></div>
+    </div>
+    <div class="tool-item" data-tool="motor-wheel" onclick="selectTool('motor-wheel')">
+      <div class="tool-icon">&#9881;</div>
+      <div>Motor Wheel<br><small>Powered CW</small></div>
+    </div>
+    <div class="help-text">
+      Right-click a part to delete it.<br>
+      Build on the green zone.<br>
+      Move the red block to the blue target!
+    </div>
+  </div>
+
+  <div id="canvas-container">
+    <canvas id="game-canvas"></canvas>
+    <div id="win-overlay">
+      <div id="win-box">
+        <h2>Level Complete!</h2>
+        <p id="win-msg">You moved the block to the target!</p>
+        <button onclick="nextLevel()">Next Level</button>
+        <button class="secondary" onclick="resetSimulation()">Replay</button>
+      </div>
+    </div>
+    <div id="delete-hint">Right-click a part to delete it</div>
+  </div>
+</div>
+
+<script>
+// --- Matter.js aliases ---
+const { Engine, Render, Runner, Bodies, Body, Composite, Constraint, Events, Mouse, Vector, Bounds } = Matter;
+
+// --- Game state ---
+let engine, render, runner;
+let currentTool = 'select';
+let isRunning = false;
+let userParts = [];       // { body, type, joints[] }
+let userConstraints = []; // matter constraints
+let groundBodies = [];
+let goalBody = null;
+let targetSensor = null;
+let buildZone = null;
+let rodStart = null;      // for rod drawing
+let currentLevel = 0;
+let hasWon = false;
+let goalInitialPos = null;
+
+// For dragging in select mode
+let draggedPart = null;
+let dragOffset = { x: 0, y: 0 };
+
+// --- Levels ---
+const levels = [
+  {
+    name: "Getting Started",
+    ground: [{ x: 500, y: 560, w: 1000, h: 40 }],
+    goal: { x: 250, y: 530, w: 40, h: 40 },
+    target: { x: 750, y: 500, w: 80, h: 80 },
+    buildArea: { x: 130, y: 350, w: 280, h: 200 },
+  },
+  {
+    name: "Over the Hill",
+    ground: [
+      { x: 300, y: 560, w: 600, h: 40 },
+      { x: 700, y: 560, w: 200, h: 40 },
+      { x: 500, y: 480, w: 60, h: 160, isWall: true },
+      { x: 900, y: 560, w: 200, h: 40 },
+    ],
+    goal: { x: 250, y: 530, w: 40, h: 40 },
+    target: { x: 850, y: 500, w: 80, h: 80 },
+    buildArea: { x: 100, y: 340, w: 260, h: 210 },
+  },
+  {
+    name: "The Gap",
+    ground: [
+      { x: 200, y: 560, w: 400, h: 40 },
+      { x: 750, y: 560, w: 300, h: 40 },
+    ],
+    goal: { x: 200, y: 530, w: 40, h: 40 },
+    target: { x: 800, y: 500, w: 80, h: 80 },
+    buildArea: { x: 80, y: 340, w: 280, h: 210 },
+  },
+  {
+    name: "Uphill Battle",
+    ground: [
+      { x: 300, y: 560, w: 600, h: 40 },
+      { x: 700, y: 480, w: 300, h: 20, angle: -0.3 },
+      { x: 880, y: 400, w: 200, h: 40 },
+    ],
+    goal: { x: 200, y: 530, w: 40, h: 40 },
+    target: { x: 880, y: 340, w: 80, h: 80 },
+    buildArea: { x: 80, y: 330, w: 280, h: 220 },
+  },
+  {
+    name: "The Ramp",
+    ground: [
+      { x: 400, y: 560, w: 800, h: 40 },
+      { x: 600, y: 460, w: 300, h: 20, angle: -0.25 },
+    ],
+    goal: { x: 180, y: 530, w: 40, h: 40 },
+    target: { x: 850, y: 500, w: 80, h: 80 },
+    buildArea: { x: 60, y: 330, w: 280, h: 220 },
+  },
+];
+
+// --- Init ---
+function init() {
+  const canvas = document.getElementById('game-canvas');
+  const container = document.getElementById('canvas-container');
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  canvas.width = W;
+  canvas.height = H;
+
+  engine = Engine.create();
+  engine.gravity.y = 1.2;
+
+  render = Render.create({
+    canvas: canvas,
+    engine: engine,
+    options: {
+      width: W,
+      height: H,
+      wireframes: false,
+      background: '#1a1a2e',
+      pixelRatio: 1,
+    }
+  });
+
+  loadLevel(currentLevel);
+  Render.run(render);
+
+  // Custom rendering on top
+  Events.on(render, 'afterRender', customDraw);
+
+  // Mouse events on canvas
+  canvas.addEventListener('mousedown', onMouseDown);
+  canvas.addEventListener('mousemove', onMouseMove);
+  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('contextmenu', onRightClick);
+
+  // Collision detection for win
+  Events.on(engine, 'collisionStart', onCollision);
+  Events.on(engine, 'collisionActive', onCollision);
+}
+
+function loadLevel(idx) {
+  if (idx >= levels.length) idx = 0;
+  currentLevel = idx;
+  const lvl = levels[idx];
+
+  // Clear everything
+  if (engine) Engine.clear(engine);
+  if (runner) Runner.stop(runner);
+  engine = Engine.create();
+  engine.gravity.y = 1.2;
+  render.engine = engine;
+
+  userParts = [];
+  userConstraints = [];
+  groundBodies = [];
+  isRunning = false;
+  hasWon = false;
+  rodStart = null;
+  draggedPart = null;
+
+  document.getElementById('play-btn').textContent = 'Play';
+  document.getElementById('play-btn').classList.remove('running');
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('next-btn').style.display = 'none';
+  document.getElementById('level-info').textContent = `Level ${idx + 1}: ${lvl.name}`;
+
+  // Ground
+  lvl.ground.forEach(g => {
+    const opts = {
+      isStatic: true,
+      render: {
+        fillStyle: g.isWall ? '#3a3a5e' : '#2a2a4e',
+        strokeStyle: '#4a4a6e',
+        lineWidth: 2,
+      },
+      friction: 0.8,
+    };
+    const body = Bodies.rectangle(g.x, g.y, g.w, g.h, opts);
+    if (g.angle) Body.setAngle(body, g.angle);
+    groundBodies.push(body);
+    Composite.add(engine.world, body);
+  });
+
+  // Walls (invisible boundaries)
+  const W = render.options.width;
+  const H = render.options.height;
+  const wallOpts = { isStatic: true, render: { visible: false } };
+  Composite.add(engine.world, [
+    Bodies.rectangle(W / 2, -20, W, 40, wallOpts),
+    Bodies.rectangle(-20, H / 2, 40, H, wallOpts),
+    Bodies.rectangle(W + 20, H / 2, 40, H, wallOpts),
+  ]);
+
+  // Goal block (the thing to move)
+  goalBody = Bodies.rectangle(lvl.goal.x, lvl.goal.y, lvl.goal.w, lvl.goal.h, {
+    render: {
+      fillStyle: '#e94560',
+      strokeStyle: '#ff6b81',
+      lineWidth: 2,
+    },
+    friction: 0.6,
+    density: 0.002,
+    label: 'goal',
+  });
+  goalInitialPos = { x: lvl.goal.x, y: lvl.goal.y };
+  Composite.add(engine.world, goalBody);
+
+  // Target zone (sensor)
+  targetSensor = Bodies.rectangle(lvl.target.x, lvl.target.y, lvl.target.w, lvl.target.h, {
+    isStatic: true,
+    isSensor: true,
+    render: { visible: false },
+    label: 'target',
+  });
+  Composite.add(engine.world, targetSensor);
+
+  // Build area definition
+  buildZone = lvl.buildArea;
+
+  Events.on(engine, 'collisionStart', onCollision);
+  Events.on(engine, 'collisionActive', onCollision);
+}
+
+// --- Drawing overlay ---
+function customDraw() {
+  const ctx = render.context;
+  const lvl = levels[currentLevel];
+
+  // Draw build zone
+  if (!isRunning && buildZone) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(78, 204, 163, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.fillStyle = 'rgba(78, 204, 163, 0.07)';
+    ctx.fillRect(buildZone.x, buildZone.y, buildZone.w, buildZone.h);
+    ctx.strokeRect(buildZone.x, buildZone.y, buildZone.w, buildZone.h);
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('BUILD ZONE', buildZone.x + 8, buildZone.y + 16);
+    ctx.restore();
+  }
+
+  // Draw target zone
+  const t = lvl.target;
+  ctx.save();
+  const pulse = 0.5 + 0.3 * Math.sin(Date.now() / 400);
+  ctx.fillStyle = `rgba(100, 149, 237, ${pulse * 0.25})`;
+  ctx.fillRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h);
+  ctx.strokeStyle = `rgba(100, 149, 237, ${pulse})`;
+  ctx.lineWidth = 3;
+  ctx.strokeRect(t.x - t.w / 2, t.y - t.h / 2, t.w, t.h);
+  ctx.fillStyle = `rgba(100, 149, 237, 0.8)`;
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('TARGET', t.x, t.y - t.h / 2 - 6);
+  ctx.restore();
+
+  // Draw rod preview
+  if (currentTool === 'rod' && rodStart && !isRunning) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(200, 150, 80, 0.6)';
+    ctx.lineWidth = 8;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(rodStart.x, rodStart.y);
+    ctx.lineTo(mousePos.x, mousePos.y);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Draw joint indicators
+  userParts.forEach(p => {
+    if (p.type === 'wheel' || p.type === 'motor-wheel') {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(p.body.position.x, p.body.position.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = p.type === 'motor-wheel' ? '#e94560' : '#4ecca3';
+      ctx.fill();
+      ctx.restore();
+    }
+  });
+
+  // Draw labels on goal
+  if (goalBody) {
+    ctx.save();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('MOVE', goalBody.position.x, goalBody.position.y - 2);
+    ctx.fillText('ME', goalBody.position.x, goalBody.position.y + 10);
+    ctx.restore();
+  }
+}
+
+let mousePos = { x: 0, y: 0 };
+
+// --- Mouse handlers ---
+function getMousePos(e) {
+  const rect = render.canvas.getBoundingClientRect();
+  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+}
+
+function isInBuildZone(x, y) {
+  if (!buildZone) return true;
+  return x >= buildZone.x && x <= buildZone.x + buildZone.w &&
+         y >= buildZone.y && y <= buildZone.y + buildZone.h;
+}
+
+function findPartAt(x, y) {
+  for (let i = userParts.length - 1; i >= 0; i--) {
+    const p = userParts[i];
+    if (Bounds.contains(p.body.bounds, { x, y })) {
+      // More precise check for circles
+      if (p.type === 'wheel' || p.type === 'motor-wheel') {
+        const dx = p.body.position.x - x;
+        const dy = p.body.position.y - y;
+        const r = p.body.circleRadius || 20;
+        if (dx * dx + dy * dy <= r * r) return p;
+      } else {
+        return p;
+      }
+    }
+  }
+  return null;
+}
+
+function onMouseDown(e) {
+  if (e.button === 2) return; // right click handled separately
+  const pos = getMousePos(e);
+  mousePos = pos;
+
+  if (isRunning) return;
+
+  if (currentTool === 'select') {
+    const part = findPartAt(pos.x, pos.y);
+    if (part) {
+      draggedPart = part;
+      dragOffset.x = part.body.position.x - pos.x;
+      dragOffset.y = part.body.position.y - pos.y;
+    }
+  } else if (currentTool === 'rod') {
+    if (isInBuildZone(pos.x, pos.y)) {
+      rodStart = { x: pos.x, y: pos.y };
+    }
+  } else if (currentTool === 'wheel') {
+    if (isInBuildZone(pos.x, pos.y)) {
+      addWheel(pos.x, pos.y, false);
+    }
+  } else if (currentTool === 'motor-wheel') {
+    if (isInBuildZone(pos.x, pos.y)) {
+      addWheel(pos.x, pos.y, true);
+    }
+  }
+}
+
+function onMouseMove(e) {
+  const pos = getMousePos(e);
+  mousePos = pos;
+
+  if (isRunning) return;
+
+  if (currentTool === 'select' && draggedPart) {
+    const nx = pos.x + dragOffset.x;
+    const ny = pos.y + dragOffset.y;
+    Body.setPosition(draggedPart.body, { x: nx, y: ny });
+    // Also move connected constraints
+    draggedPart.joints.forEach(j => {
+      // update constraint point if it anchors to this body
+    });
+  }
+}
+
+function onMouseUp(e) {
+  if (e.button === 2) return;
+  const pos = getMousePos(e);
+
+  if (isRunning) return;
+
+  if (currentTool === 'rod' && rodStart) {
+    const dx = pos.x - rodStart.x;
+    const dy = pos.y - rodStart.y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+    if (len > 15) {
+      addRod(rodStart.x, rodStart.y, pos.x, pos.y);
+    }
+    rodStart = null;
+  }
+
+  if (currentTool === 'select') {
+    draggedPart = null;
+  }
+}
+
+function onRightClick(e) {
+  e.preventDefault();
+  if (isRunning) return;
+  const pos = getMousePos(e);
+  const part = findPartAt(pos.x, pos.y);
+  if (part) {
+    removePart(part);
+  }
+}
+
+// --- Part creation ---
+function addRod(x1, y1, x2, y2) {
+  const cx = (x1 + x2) / 2;
+  const cy = (y1 + y2) / 2;
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+
+  const body = Bodies.rectangle(cx, cy, len, 10, {
+    render: {
+      fillStyle: '#c89650',
+      strokeStyle: '#a07030',
+      lineWidth: 1,
+    },
+    friction: 0.6,
+    density: 0.001,
+    label: 'rod',
+  });
+  Body.setAngle(body, angle);
+  Composite.add(engine.world, body);
+
+  const part = { body, type: 'rod', joints: [] };
+  userParts.push(part);
+
+  // Auto-attach to nearby parts
+  autoAttach(part, { x: x1, y: y1 });
+  autoAttach(part, { x: x2, y: y2 });
+}
+
+function addWheel(x, y, isMotor) {
+  const radius = 22;
+  const body = Bodies.circle(x, y, radius, {
+    render: {
+      fillStyle: isMotor ? '#7b2d8e' : '#3a3a5e',
+      strokeStyle: isMotor ? '#a855c7' : '#5a5a7e',
+      lineWidth: 2,
+    },
+    friction: 0.9,
+    density: 0.001,
+    label: isMotor ? 'motor-wheel' : 'wheel',
+  });
+  Composite.add(engine.world, body);
+
+  const part = { body, type: isMotor ? 'motor-wheel' : 'wheel', joints: [], isMotor };
+  userParts.push(part);
+
+  // Auto-attach to nearby rods
+  autoAttach(part, { x, y });
+}
+
+function autoAttach(newPart, point) {
+  const threshold = 30;
+  userParts.forEach(existing => {
+    if (existing === newPart) return;
+
+    // Find closest point on existing body to the given point
+    const ep = existing.body.position;
+    const dist = Vector.magnitude(Vector.sub(point, ep));
+
+    // For rods check endpoints too
+    if (existing.type === 'rod') {
+      const verts = existing.body.vertices;
+      // Check if point is near either end of the rod
+      const rodLen = getBodyLength(existing.body);
+      const angle = existing.body.angle;
+      const endA = {
+        x: ep.x - Math.cos(angle) * rodLen / 2,
+        y: ep.y - Math.sin(angle) * rodLen / 2,
+      };
+      const endB = {
+        x: ep.x + Math.cos(angle) * rodLen / 2,
+        y: ep.y + Math.sin(angle) * rodLen / 2,
+      };
+
+      let closest = null;
+      let closestDist = Infinity;
+      [endA, endB, ep].forEach(cp => {
+        const d = Vector.magnitude(Vector.sub(point, cp));
+        if (d < closestDist) {
+          closestDist = d;
+          closest = cp;
+        }
+      });
+
+      if (closestDist < threshold) {
+        createJoint(newPart, existing, closest);
+      }
+    } else {
+      if (dist < threshold) {
+        createJoint(newPart, existing, ep);
+      }
+    }
+  });
+
+  // Also attach to goal block if close
+  if (goalBody) {
+    const gp = goalBody.position;
+    const dist = Vector.magnitude(Vector.sub(point, gp));
+    if (dist < threshold) {
+      const constraint = Constraint.create({
+        bodyA: newPart.body,
+        pointA: {
+          x: gp.x - newPart.body.position.x,
+          y: gp.y - newPart.body.position.y,
+        },
+        bodyB: goalBody,
+        pointB: { x: 0, y: 0 },
+        stiffness: 0.8,
+        length: 0,
+        render: {
+          strokeStyle: '#4ecca3',
+          lineWidth: 2,
+        }
+      });
+      Composite.add(engine.world, constraint);
+      userConstraints.push(constraint);
+      newPart.joints.push(constraint);
+    }
+  }
+}
+
+function getBodyLength(body) {
+  const bounds = body.bounds;
+  const w = bounds.max.x - bounds.min.x;
+  const h = bounds.max.y - bounds.min.y;
+  return Math.max(w, h);
+}
+
+function createJoint(partA, partB, worldPoint) {
+  // Check if already connected
+  const alreadyConnected = userConstraints.some(c =>
+    (c.bodyA === partA.body && c.bodyB === partB.body) ||
+    (c.bodyA === partB.body && c.bodyB === partA.body)
+  );
+  if (alreadyConnected) return;
+
+  const constraint = Constraint.create({
+    bodyA: partA.body,
+    pointA: {
+      x: worldPoint.x - partA.body.position.x,
+      y: worldPoint.y - partA.body.position.y,
+    },
+    bodyB: partB.body,
+    pointB: {
+      x: worldPoint.x - partB.body.position.x,
+      y: worldPoint.y - partB.body.position.y,
+    },
+    stiffness: 0.6,
+    damping: 0.1,
+    length: 0,
+    render: {
+      strokeStyle: '#4ecca3',
+      lineWidth: 2,
+    }
+  });
+  Composite.add(engine.world, constraint);
+  userConstraints.push(constraint);
+  partA.joints.push(constraint);
+  partB.joints.push(constraint);
+}
+
+function removePart(part) {
+  // Remove constraints
+  part.joints.forEach(c => {
+    Composite.remove(engine.world, c);
+    const ci = userConstraints.indexOf(c);
+    if (ci >= 0) userConstraints.splice(ci, 1);
+    // Also remove from other parts' joints
+    userParts.forEach(p => {
+      const ji = p.joints.indexOf(c);
+      if (ji >= 0) p.joints.splice(ji, 1);
+    });
+  });
+
+  Composite.remove(engine.world, part.body);
+  const idx = userParts.indexOf(part);
+  if (idx >= 0) userParts.splice(idx, 1);
+}
+
+// --- Simulation controls ---
+function toggleSimulation() {
+  if (hasWon) return;
+  if (isRunning) {
+    resetSimulation();
+  } else {
+    startSimulation();
+  }
+}
+
+function startSimulation() {
+  if (isRunning) return;
+  isRunning = true;
+
+  // Save positions for reset
+  userParts.forEach(p => {
+    p.savedPos = { x: p.body.position.x, y: p.body.position.y };
+    p.savedAngle = p.body.angle;
+    Body.setStatic(p.body, false);
+  });
+  goalInitialPos = { x: goalBody.position.x, y: goalBody.position.y };
+
+  runner = Runner.create();
+  Runner.run(runner, engine);
+
+  // Apply motor torques
+  Events.on(engine, 'beforeUpdate', applyMotors);
+
+  document.getElementById('play-btn').textContent = 'Stop';
+  document.getElementById('play-btn').classList.add('running');
+}
+
+function applyMotors() {
+  userParts.forEach(p => {
+    if (p.type === 'motor-wheel') {
+      Body.setAngularVelocity(p.body, 0.15);
+    }
+  });
+}
+
+function resetSimulation() {
+  if (runner) Runner.stop(runner);
+  Events.off(engine, 'beforeUpdate', applyMotors);
+  isRunning = false;
+  hasWon = false;
+
+  document.getElementById('play-btn').textContent = 'Play';
+  document.getElementById('play-btn').classList.remove('running');
+  document.getElementById('win-overlay').classList.remove('show');
+
+  // Restore positions
+  userParts.forEach(p => {
+    if (p.savedPos) {
+      Body.setPosition(p.body, p.savedPos);
+      Body.setAngle(p.body, p.savedAngle);
+      Body.setVelocity(p.body, { x: 0, y: 0 });
+      Body.setAngularVelocity(p.body, 0);
+      Body.setStatic(p.body, true);
+      // Immediately unset static so they're ready for next play
+      // Actually keep them static until play
+    }
+  });
+
+  // Reset goal
+  if (goalBody && goalInitialPos) {
+    Body.setPosition(goalBody, goalInitialPos);
+    Body.setVelocity(goalBody, { x: 0, y: 0 });
+    Body.setAngularVelocity(goalBody, 0);
+    Body.setAngle(goalBody, 0);
+  }
+}
+
+function clearParts() {
+  if (isRunning) resetSimulation();
+  userParts.forEach(p => {
+    p.joints.forEach(c => Composite.remove(engine.world, c));
+    Composite.remove(engine.world, p.body);
+  });
+  userParts = [];
+  userConstraints = [];
+}
+
+// --- Collision / Win detection ---
+function onCollision(event) {
+  if (!isRunning || hasWon) return;
+  event.pairs.forEach(pair => {
+    const labels = [pair.bodyA.label, pair.bodyB.label];
+    if (labels.includes('goal') && labels.includes('target')) {
+      winLevel();
+    }
+  });
+}
+
+function winLevel() {
+  hasWon = true;
+  document.getElementById('win-overlay').classList.add('show');
+  if (currentLevel < levels.length - 1) {
+    document.getElementById('next-btn').style.display = 'inline-block';
+    document.getElementById('win-msg').textContent = 'Great engineering! Ready for the next challenge?';
+  } else {
+    document.getElementById('win-msg').textContent = 'You completed all levels! Amazing!';
+  }
+}
+
+function nextLevel() {
+  if (runner) Runner.stop(runner);
+  Events.off(engine, 'beforeUpdate', applyMotors);
+  currentLevel = (currentLevel + 1) % levels.length;
+  loadLevel(currentLevel);
+}
+
+// --- Tool selection ---
+function selectTool(tool) {
+  currentTool = tool;
+  document.querySelectorAll('.tool-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.tool === tool);
+  });
+
+  const hint = document.getElementById('delete-hint');
+  hint.style.display = (tool === 'select') ? 'block' : 'none';
+}
+
+// --- Start ---
+window.addEventListener('load', init);
+window.addEventListener('resize', () => {
+  const container = document.getElementById('canvas-container');
+  render.canvas.width = container.clientWidth;
+  render.canvas.height = container.clientHeight;
+  render.options.width = container.clientWidth;
+  render.options.height = container.clientHeight;
+});
+</script>
+</body>
+</html>

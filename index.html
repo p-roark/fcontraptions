@@ -496,7 +496,6 @@ function init() {
   engine = Engine.create();
   engine.gravity.y = 1.2;
 
-  const dpr = window.devicePixelRatio || 1;
   render = Render.create({
     canvas: canvas,
     engine: engine,
@@ -505,7 +504,7 @@ function init() {
       height: H,
       wireframes: false,
       background: '#1a1a2e',
-      pixelRatio: dpr,
+      pixelRatio: 1,
     }
   });
 
@@ -1223,12 +1222,10 @@ function handleResize() {
     prevCanvasW = W;
     prevCanvasH = H;
 
-    const dpr = window.devicePixelRatio || 1;
-    render.canvas.width = W * dpr;
-    render.canvas.height = H * dpr;
+    render.canvas.width = W;
+    render.canvas.height = H;
     render.options.width = W;
     render.options.height = H;
-    render.options.pixelRatio = dpr;
 
     // Save user parts info relative to old canvas
     const savedParts = userParts.map(p => ({

@@ -484,18 +484,19 @@ function getCanvasSize() {
 function init() {
   const canvas = document.getElementById('game-canvas');
   const { w: W, h: H } = getCanvasSize();
-  canvas.width = W;
-  canvas.height = H;
+  prevCanvasW = W;
+  prevCanvasH = H;
 
   // Set initial cursor
   canvas.className = 'tool-rod';
 
-  // Build levels based on actual canvas size
+  // Build levels based on CSS pixel canvas size
   levels = buildLevels(W, H);
 
   engine = Engine.create();
   engine.gravity.y = 1.2;
 
+  const dpr = window.devicePixelRatio || 1;
   render = Render.create({
     canvas: canvas,
     engine: engine,
@@ -504,7 +505,7 @@ function init() {
       height: H,
       wireframes: false,
       background: '#1a1a2e',
-      pixelRatio: 1,
+      pixelRatio: dpr,
     }
   });
 
@@ -524,10 +525,18 @@ function init() {
   canvas.addEventListener('touchstart', onTouchStart, { passive: false });
   canvas.addEventListener('touchmove', onTouchMove, { passive: false });
   canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+  canvas.addEventListener('touchcancel', onTouchEnd, { passive: false });
 
-  // Prevent pinch zoom on the whole page
+  // Prevent pinch zoom and double-tap zoom on the whole page
   document.addEventListener('gesturestart', e => e.preventDefault());
   document.addEventListener('gesturechange', e => e.preventDefault());
+  // Prevent double-tap zoom on mobile
+  let lastTap = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 300) e.preventDefault();
+    lastTap = now;
+  }, { passive: false });
 
   // Mark rod as selected in toolbar
   document.querySelectorAll('.tool-item').forEach(el => {
@@ -729,8 +738,9 @@ let mousePos = { x: 0, y: 0 };
 // --- Mouse handlers ---
 function getMousePos(e) {
   const rect = render.canvas.getBoundingClientRect();
-  const scaleX = render.canvas.width / rect.width;
-  const scaleY = render.canvas.height / rect.height;
+  // Map to world coordinates (CSS pixels), not canvas pixels
+  const scaleX = render.options.width / rect.width;
+  const scaleY = render.options.height / rect.height;
   return {
     x: (e.clientX - rect.left) * scaleX,
     y: (e.clientY - rect.top) * scaleY
@@ -744,19 +754,20 @@ function isInBuildZone(x, y) {
 }
 
 function findPartAt(x, y) {
-  // Use a generous hit area
+  // Use a generous hit area, larger on mobile for fat fingers
+  const mobile = isMobile();
   for (let i = userParts.length - 1; i >= 0; i--) {
     const p = userParts[i];
     const pos = p.body.position;
     if (p.type === 'wheel' || p.type === 'motor-wheel') {
-      const r = (p.body.circleRadius || 22) + 5; // extra margin
+      const r = (p.body.circleRadius || 22) + (mobile ? 15 : 5);
       const dx = pos.x - x;
       const dy = pos.y - y;
       if (dx * dx + dy * dy <= r * r) return p;
     } else {
-      // For rods, expand bounds slightly
+      // For rods, expand bounds more on mobile
       const b = p.body.bounds;
-      const margin = 8;
+      const margin = mobile ? 18 : 8;
       if (x >= b.min.x - margin && x <= b.max.x + margin &&
           y >= b.min.y - margin && y <= b.max.y + margin) {
         return p;
@@ -1199,19 +1210,59 @@ function selectTool(tool) {
 window.addEventListener('load', init);
 
 let resizeTimer;
-window.addEventListener('resize', () => {
+let prevCanvasW = 0, prevCanvasH = 0;
+function handleResize() {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
     const { w: W, h: H } = getCanvasSize();
     if (W <= 0 || H <= 0) return;
-    render.canvas.width = W;
-    render.canvas.height = H;
+    if (W === prevCanvasW && H === prevCanvasH) return; // no actual change
+
+    const oldW = prevCanvasW || W;
+    const oldH = prevCanvasH || H;
+    prevCanvasW = W;
+    prevCanvasH = H;
+
+    const dpr = window.devicePixelRatio || 1;
+    render.canvas.width = W * dpr;
+    render.canvas.height = H * dpr;
     render.options.width = W;
     render.options.height = H;
-    // Rebuild levels for new size
+    render.options.pixelRatio = dpr;
+
+    // Save user parts info relative to old canvas
+    const savedParts = userParts.map(p => ({
+      relX: p.body.position.x / oldW,
+      relY: p.body.position.y / oldH,
+      angle: p.body.angle,
+      type: p.type,
+      length: p.type === 'rod' ? getBodyLength(p.body) : 0,
+    }));
+
+    // Rebuild levels for new size and reload current level
     levels = buildLevels(W, H);
-  }, 100);
-});
+    loadLevel(currentLevel);
+
+    // Recreate user parts at scaled positions
+    const scale = Math.min(W / oldW, H / oldH);
+    savedParts.forEach(sp => {
+      const nx = sp.relX * W;
+      const ny = sp.relY * H;
+      if (sp.type === 'rod') {
+        const len = sp.length * scale;
+        const dx = Math.cos(sp.angle) * len / 2;
+        const dy = Math.sin(sp.angle) * len / 2;
+        addRod(nx - dx, ny - dy, nx + dx, ny + dy);
+      } else if (sp.type === 'wheel') {
+        addWheel(nx, ny, false);
+      } else if (sp.type === 'motor-wheel') {
+        addWheel(nx, ny, true);
+      }
+    });
+  }, 150);
+}
+window.addEventListener('resize', handleResize);
+window.addEventListener('orientationchange', () => setTimeout(handleResize, 200));
 </script>
 </body>
 </html>

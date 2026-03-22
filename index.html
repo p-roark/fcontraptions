@@ -2,21 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Fantastic Contraptions</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
+html, body {
   background: #1a1a2e;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
 }
 
+/* --- TOP BAR --- */
 #top-bar {
   display: flex;
   align-items: center;
@@ -25,26 +30,29 @@ body {
   background: #16213e;
   border-bottom: 2px solid #0f3460;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 #top-bar h1 {
   color: #e94560;
   font-size: 20px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 #level-info {
   color: #a8a8b3;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 #controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 #controls button {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -53,112 +61,127 @@ body {
   transition: all 0.2s;
 }
 
-#play-btn {
-  background: #4ecca3;
-  color: #1a1a2e;
-}
+#play-btn { background: #4ecca3; color: #1a1a2e; }
 #play-btn:hover { background: #3db88a; }
-#play-btn.running { background: #e94560; }
+#play-btn.running { background: #e94560; color: #fff; }
 #play-btn.running:hover { background: #d63851; }
-
-#reset-btn {
-  background: #533483;
-  color: #fff;
-}
+#reset-btn { background: #533483; color: #fff; }
 #reset-btn:hover { background: #6b44a0; }
-
-#clear-btn {
-  background: #0f3460;
-  color: #a8a8b3;
-}
+#clear-btn { background: #0f3460; color: #a8a8b3; }
 #clear-btn:hover { background: #1a4a80; color: #fff; }
-
-#next-btn {
-  background: #e94560;
-  color: #fff;
-  display: none;
-}
+#next-btn { background: #e94560; color: #fff; display: none; }
 #next-btn:hover { background: #d63851; }
 
+/* --- MAIN AREA (desktop: sidebar left + canvas) --- */
 #main-area {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
+/* --- TOOLBAR (desktop: vertical sidebar) --- */
 #toolbar {
-  width: 180px;
+  width: 160px;
   background: #16213e;
   border-right: 2px solid #0f3460;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 #toolbar h3 {
   color: #4ecca3;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .tool-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   border: 2px solid transparent;
   color: #a8a8b3;
   font-size: 13px;
 }
-
-.tool-item:hover {
-  background: #1a2a50;
-  color: #fff;
-}
-
-.tool-item.selected {
-  border-color: #4ecca3;
-  background: #1a2a50;
-  color: #4ecca3;
-}
+.tool-item:hover { background: #1a2a50; color: #fff; }
+.tool-item.selected { border-color: #4ecca3; background: #1a2a50; color: #4ecca3; }
 
 .tool-icon {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 18px;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .tool-item[data-tool="select"] .tool-icon { background: #2a2a4e; }
 .tool-item[data-tool="rod"] .tool-icon { background: #8b5e3c; }
 .tool-item[data-tool="wheel"] .tool-icon { background: #3a3a5e; }
 .tool-item[data-tool="motor-wheel"] .tool-icon { background: #5a3a6e; }
+.tool-item[data-tool="delete"] .tool-icon { background: #6b2030; }
+
+.tool-label { line-height: 1.2; }
+.tool-label small { opacity: 0.6; }
 
 #toolbar .help-text {
   color: #555;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
   margin-top: auto;
-  padding: 8px;
+  padding: 6px;
   border-top: 1px solid #0f3460;
 }
 
+/* --- CANVAS --- */
 #canvas-container {
   flex: 1;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 canvas {
   display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+canvas.tool-select { cursor: grab; }
+canvas.tool-select.dragging { cursor: grabbing; }
+canvas.tool-rod { cursor: crosshair; }
+canvas.tool-wheel { cursor: copy; }
+canvas.tool-motor-wheel { cursor: copy; }
+canvas.tool-delete { cursor: pointer; }
+
+/* --- OVERLAYS --- */
+#toast {
+  display: none;
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(233, 69, 96, 0.9);
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  z-index: 15;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  text-align: center;
+  max-width: 80%;
 }
 
 #win-overlay {
@@ -169,34 +192,22 @@ canvas {
   z-index: 20;
   justify-content: center;
   align-items: center;
+  padding: 16px;
 }
-
-#win-overlay.show {
-  display: flex;
-}
+#win-overlay.show { display: flex; }
 
 #win-box {
   background: #16213e;
   border: 3px solid #4ecca3;
   border-radius: 16px;
-  padding: 40px 60px;
+  padding: 32px 40px;
   text-align: center;
+  max-width: 90vw;
 }
-
-#win-box h2 {
-  color: #4ecca3;
-  font-size: 36px;
-  margin-bottom: 12px;
-}
-
-#win-box p {
-  color: #a8a8b3;
-  font-size: 16px;
-  margin-bottom: 24px;
-}
-
+#win-box h2 { color: #4ecca3; font-size: 28px; margin-bottom: 10px; }
+#win-box p { color: #a8a8b3; font-size: 15px; margin-bottom: 20px; }
 #win-box button {
-  padding: 12px 32px;
+  padding: 12px 28px;
   background: #4ecca3;
   color: #1a1a2e;
   border: none;
@@ -204,13 +215,10 @@ canvas {
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  margin: 0 8px;
+  margin: 4px;
 }
 #win-box button:hover { background: #3db88a; }
-#win-box button.secondary {
-  background: #533483;
-  color: #fff;
-}
+#win-box button.secondary { background: #533483; color: #fff; }
 
 #delete-hint {
   display: none;
@@ -224,6 +232,85 @@ canvas {
   border-radius: 6px;
   font-size: 12px;
   z-index: 5;
+  white-space: nowrap;
+}
+
+/* ======================= */
+/* MOBILE LAYOUT (<= 768px) */
+/* ======================= */
+@media (max-width: 768px) {
+  body { height: 100dvh; }
+
+  #top-bar {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  #top-bar h1 { font-size: 15px; }
+  #level-info { font-size: 12px; order: 3; width: 100%; text-align: center; margin-top: 2px; }
+  #controls { gap: 4px; }
+  #controls button { padding: 6px 10px; font-size: 12px; }
+
+  /* Stack: top-bar, canvas, toolbar(bottom) */
+  #main-area {
+    flex-direction: column;
+  }
+
+  /* Toolbar becomes horizontal bottom bar */
+  #toolbar {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-top: 2px solid #0f3460;
+    padding: 6px 8px;
+    gap: 4px;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    order: 2; /* put below canvas */
+  }
+  #toolbar h3 { display: none; }
+  #toolbar .help-text { display: none; }
+
+  .tool-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    font-size: 11px;
+    min-width: 56px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tool-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .tool-label small { display: none; }
+
+  #canvas-container {
+    order: 1; /* canvas above toolbar */
+  }
+
+  #delete-hint {
+    bottom: auto;
+    top: 8px;
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  #win-box { padding: 24px 20px; }
+  #win-box h2 { font-size: 24px; }
+  #win-box p { font-size: 14px; }
+  #win-box button { padding: 10px 20px; font-size: 14px; }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+  #top-bar h1 { font-size: 13px; }
+  #controls button { padding: 5px 8px; font-size: 11px; }
+  .tool-item { padding: 5px 8px; min-width: 48px; font-size: 10px; }
+  .tool-icon { width: 32px; height: 32px; font-size: 16px; }
 }
 </style>
 </head>
@@ -243,24 +330,27 @@ canvas {
 <div id="main-area">
   <div id="toolbar">
     <h3>Tools</h3>
-    <div class="tool-item selected" data-tool="select" onclick="selectTool('select')">
+    <div class="tool-item" data-tool="select" onclick="selectTool('select')">
       <div class="tool-icon">&#9995;</div>
-      <div>Select<br><small>Move parts</small></div>
+      <div class="tool-label">Select<br><small>Move parts</small></div>
     </div>
-    <div class="tool-item" data-tool="rod" onclick="selectTool('rod')">
+    <div class="tool-item selected" data-tool="rod" onclick="selectTool('rod')">
       <div class="tool-icon">&#9644;</div>
-      <div>Rod<br><small>Click + drag</small></div>
+      <div class="tool-label">Rod<br><small>Drag to draw</small></div>
     </div>
     <div class="tool-item" data-tool="wheel" onclick="selectTool('wheel')">
       <div class="tool-icon">&#9711;</div>
-      <div>Wheel<br><small>Free spinning</small></div>
+      <div class="tool-label">Wheel<br><small>Free spin</small></div>
     </div>
     <div class="tool-item" data-tool="motor-wheel" onclick="selectTool('motor-wheel')">
       <div class="tool-icon">&#9881;</div>
-      <div>Motor Wheel<br><small>Powered CW</small></div>
+      <div class="tool-label">Motor<br><small>Powered</small></div>
+    </div>
+    <div class="tool-item" data-tool="delete" onclick="selectTool('delete')">
+      <div class="tool-icon">&#10005;</div>
+      <div class="tool-label">Delete<br><small>Tap part</small></div>
     </div>
     <div class="help-text">
-      Right-click a part to delete it.<br>
       Build on the green zone.<br>
       Move the red block to the blue target!
     </div>
@@ -277,6 +367,7 @@ canvas {
       </div>
     </div>
     <div id="delete-hint">Right-click a part to delete it</div>
+    <div id="toast"></div>
   </div>
 </div>
 
@@ -286,7 +377,7 @@ const { Engine, Render, Runner, Bodies, Body, Composite, Constraint, Events, Mou
 
 // --- Game state ---
 let engine, render, runner;
-let currentTool = 'select';
+let currentTool = 'rod';  // Start with rod tool for better UX
 let isRunning = false;
 let userParts = [];       // { body, type, joints[] }
 let userConstraints = []; // matter constraints
@@ -303,68 +394,104 @@ let goalInitialPos = null;
 let draggedPart = null;
 let dragOffset = { x: 0, y: 0 };
 
-// --- Levels ---
-const levels = [
-  {
-    name: "Getting Started",
-    ground: [{ x: 500, y: 560, w: 1000, h: 40 }],
-    goal: { x: 250, y: 530, w: 40, h: 40 },
-    target: { x: 750, y: 500, w: 80, h: 80 },
-    buildArea: { x: 130, y: 350, w: 280, h: 200 },
-  },
-  {
-    name: "Over the Hill",
-    ground: [
-      { x: 300, y: 560, w: 600, h: 40 },
-      { x: 700, y: 560, w: 200, h: 40 },
-      { x: 500, y: 480, w: 60, h: 160, isWall: true },
-      { x: 900, y: 560, w: 200, h: 40 },
-    ],
-    goal: { x: 250, y: 530, w: 40, h: 40 },
-    target: { x: 850, y: 500, w: 80, h: 80 },
-    buildArea: { x: 100, y: 340, w: 260, h: 210 },
-  },
-  {
-    name: "The Gap",
-    ground: [
-      { x: 200, y: 560, w: 400, h: 40 },
-      { x: 750, y: 560, w: 300, h: 40 },
-    ],
-    goal: { x: 200, y: 530, w: 40, h: 40 },
-    target: { x: 800, y: 500, w: 80, h: 80 },
-    buildArea: { x: 80, y: 340, w: 280, h: 210 },
-  },
-  {
-    name: "Uphill Battle",
-    ground: [
-      { x: 300, y: 560, w: 600, h: 40 },
-      { x: 700, y: 480, w: 300, h: 20, angle: -0.3 },
-      { x: 880, y: 400, w: 200, h: 40 },
-    ],
-    goal: { x: 200, y: 530, w: 40, h: 40 },
-    target: { x: 880, y: 340, w: 80, h: 80 },
-    buildArea: { x: 80, y: 330, w: 280, h: 220 },
-  },
-  {
-    name: "The Ramp",
-    ground: [
-      { x: 400, y: 560, w: 800, h: 40 },
-      { x: 600, y: 460, w: 300, h: 20, angle: -0.25 },
-    ],
-    goal: { x: 180, y: 530, w: 40, h: 40 },
-    target: { x: 850, y: 500, w: 80, h: 80 },
-    buildArea: { x: 60, y: 330, w: 280, h: 220 },
-  },
-];
+// Toast notification
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => { el.style.display = 'none'; }, 300);
+  }, 1500);
+}
+
+// --- Levels (use fractions of canvas size for responsive layout) ---
+function buildLevels(W, H) {
+  const groundY = H - 40;
+  const groundH = 40;
+  const buildH = H * 0.38;
+  const buildY = groundY - groundH - buildH - 10;
+  return [
+    {
+      name: "Getting Started",
+      ground: [{ x: W * 0.5, y: groundY, w: W, h: groundH }],
+      goal: { x: W * 0.25, y: groundY - groundH / 2 - 20, w: 40, h: 40 },
+      target: { x: W * 0.75, y: groundY - groundH / 2 - 40, w: 80, h: 80 },
+      buildArea: { x: W * 0.05, y: buildY, w: W * 0.35, h: buildH },
+    },
+    {
+      name: "Over the Hill",
+      ground: [
+        { x: W * 0.3, y: groundY, w: W * 0.6, h: groundH },
+        { x: W * 0.7, y: groundY, w: W * 0.2, h: groundH },
+        { x: W * 0.5, y: groundY - 80, w: 60, h: 160, isWall: true },
+        { x: W * 0.9, y: groundY, w: W * 0.2, h: groundH },
+      ],
+      goal: { x: W * 0.25, y: groundY - groundH / 2 - 20, w: 40, h: 40 },
+      target: { x: W * 0.85, y: groundY - groundH / 2 - 40, w: 80, h: 80 },
+      buildArea: { x: W * 0.05, y: buildY, w: W * 0.3, h: buildH },
+    },
+    {
+      name: "The Gap",
+      ground: [
+        { x: W * 0.2, y: groundY, w: W * 0.4, h: groundH },
+        { x: W * 0.75, y: groundY, w: W * 0.3, h: groundH },
+      ],
+      goal: { x: W * 0.2, y: groundY - groundH / 2 - 20, w: 40, h: 40 },
+      target: { x: W * 0.8, y: groundY - groundH / 2 - 40, w: 80, h: 80 },
+      buildArea: { x: W * 0.02, y: buildY, w: W * 0.35, h: buildH },
+    },
+    {
+      name: "Uphill Battle",
+      ground: [
+        { x: W * 0.3, y: groundY, w: W * 0.6, h: groundH },
+        { x: W * 0.7, y: groundY - 80, w: W * 0.3, h: 20, angle: -0.3 },
+        { x: W * 0.88, y: groundY - 160, w: W * 0.2, h: groundH },
+      ],
+      goal: { x: W * 0.2, y: groundY - groundH / 2 - 20, w: 40, h: 40 },
+      target: { x: W * 0.88, y: groundY - 200, w: 80, h: 80 },
+      buildArea: { x: W * 0.02, y: buildY, w: W * 0.35, h: buildH },
+    },
+    {
+      name: "The Ramp",
+      ground: [
+        { x: W * 0.4, y: groundY, w: W * 0.8, h: groundH },
+        { x: W * 0.6, y: groundY - 100, w: W * 0.3, h: 20, angle: -0.25 },
+      ],
+      goal: { x: W * 0.18, y: groundY - groundH / 2 - 20, w: 40, h: 40 },
+      target: { x: W * 0.85, y: groundY - groundH / 2 - 40, w: 80, h: 80 },
+      buildArea: { x: W * 0.02, y: buildY, w: W * 0.35, h: buildH },
+    },
+  ];
+}
+
+let levels = [];
+
+// --- Helpers ---
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+function getCanvasSize() {
+  const container = document.getElementById('canvas-container');
+  return { w: container.clientWidth, h: container.clientHeight };
+}
 
 // --- Init ---
 function init() {
   const canvas = document.getElementById('game-canvas');
-  const container = document.getElementById('canvas-container');
-  const W = container.clientWidth;
-  const H = container.clientHeight;
+  const { w: W, h: H } = getCanvasSize();
   canvas.width = W;
   canvas.height = H;
+
+  // Set initial cursor
+  canvas.className = 'tool-rod';
+
+  // Build levels based on actual canvas size
+  levels = buildLevels(W, H);
 
   engine = Engine.create();
   engine.gravity.y = 1.2;
@@ -393,9 +520,19 @@ function init() {
   canvas.addEventListener('mouseup', onMouseUp);
   canvas.addEventListener('contextmenu', onRightClick);
 
-  // Collision detection for win
-  Events.on(engine, 'collisionStart', onCollision);
-  Events.on(engine, 'collisionActive', onCollision);
+  // Touch support for mobile/tablet
+  canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+
+  // Prevent pinch zoom on the whole page
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+
+  // Mark rod as selected in toolbar
+  document.querySelectorAll('.tool-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.tool === 'rod');
+  });
 }
 
 function loadLevel(idx) {
@@ -451,8 +588,9 @@ function loadLevel(idx) {
     Bodies.rectangle(W + 20, H / 2, 40, H, wallOpts),
   ]);
 
-  // Goal block (the thing to move)
+  // Goal block (the thing to move) — static during build mode
   goalBody = Bodies.rectangle(lvl.goal.x, lvl.goal.y, lvl.goal.w, lvl.goal.h, {
+    isStatic: true,
     render: {
       fillStyle: '#e94560',
       strokeStyle: '#ff6b81',
@@ -489,16 +627,30 @@ function customDraw() {
   // Draw build zone
   if (!isRunning && buildZone) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(78, 204, 163, 0.5)';
+    ctx.strokeStyle = 'rgba(78, 204, 163, 0.6)';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 4]);
-    ctx.fillStyle = 'rgba(78, 204, 163, 0.07)';
+    ctx.fillStyle = 'rgba(78, 204, 163, 0.1)';
     ctx.fillRect(buildZone.x, buildZone.y, buildZone.w, buildZone.h);
     ctx.strokeRect(buildZone.x, buildZone.y, buildZone.w, buildZone.h);
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(78, 204, 163, 0.6)';
-    ctx.font = '11px sans-serif';
-    ctx.fillText('BUILD ZONE', buildZone.x + 8, buildZone.y + 16);
+    ctx.fillStyle = 'rgba(78, 204, 163, 0.7)';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText('BUILD ZONE — Place parts here', buildZone.x + 8, buildZone.y + 18);
+    ctx.restore();
+  }
+
+  // Draw instructions when no parts placed
+  if (!isRunning && userParts.length === 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(168, 168, 179, 0.6)';
+    const mobile = isMobile();
+    ctx.font = (mobile ? '14' : '16') + 'px sans-serif';
+    ctx.textAlign = 'center';
+    const cx = buildZone ? buildZone.x + buildZone.w / 2 : render.options.width / 2;
+    const cy = buildZone ? buildZone.y + buildZone.h / 2 : render.options.height / 2;
+    ctx.fillText(mobile ? 'Tap & drag here to draw rods' : 'Click & drag here to draw rods', cx, cy - 10);
+    ctx.fillText('Then add wheels and press Play!', cx, cy + 14);
     ctx.restore();
   }
 
@@ -520,8 +672,8 @@ function customDraw() {
   // Draw rod preview
   if (currentTool === 'rod' && rodStart && !isRunning) {
     ctx.save();
-    ctx.strokeStyle = 'rgba(200, 150, 80, 0.6)';
-    ctx.lineWidth = 8;
+    ctx.strokeStyle = 'rgba(200, 150, 80, 0.7)';
+    ctx.lineWidth = 10;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(rodStart.x, rodStart.y);
@@ -535,9 +687,26 @@ function customDraw() {
     if (p.type === 'wheel' || p.type === 'motor-wheel') {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(p.body.position.x, p.body.position.y, 3, 0, Math.PI * 2);
+      ctx.arc(p.body.position.x, p.body.position.y, 4, 0, Math.PI * 2);
       ctx.fillStyle = p.type === 'motor-wheel' ? '#e94560' : '#4ecca3';
       ctx.fill();
+      // Draw direction indicator for motor wheels
+      if (p.type === 'motor-wheel') {
+        ctx.strokeStyle = '#a855c7';
+        ctx.lineWidth = 2;
+        const r = p.body.circleRadius || 22;
+        ctx.beginPath();
+        ctx.arc(p.body.position.x, p.body.position.y, r - 4, 0, Math.PI * 1.5);
+        ctx.stroke();
+        // Arrow head
+        const ax = p.body.position.x;
+        const ay = p.body.position.y - (r - 4);
+        ctx.beginPath();
+        ctx.moveTo(ax - 5, ay - 3);
+        ctx.lineTo(ax, ay);
+        ctx.lineTo(ax - 5, ay + 3);
+        ctx.stroke();
+      }
       ctx.restore();
     }
   });
@@ -560,7 +729,12 @@ let mousePos = { x: 0, y: 0 };
 // --- Mouse handlers ---
 function getMousePos(e) {
   const rect = render.canvas.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  const scaleX = render.canvas.width / rect.width;
+  const scaleY = render.canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top) * scaleY
+  };
 }
 
 function isInBuildZone(x, y) {
@@ -570,16 +744,21 @@ function isInBuildZone(x, y) {
 }
 
 function findPartAt(x, y) {
+  // Use a generous hit area
   for (let i = userParts.length - 1; i >= 0; i--) {
     const p = userParts[i];
-    if (Bounds.contains(p.body.bounds, { x, y })) {
-      // More precise check for circles
-      if (p.type === 'wheel' || p.type === 'motor-wheel') {
-        const dx = p.body.position.x - x;
-        const dy = p.body.position.y - y;
-        const r = p.body.circleRadius || 20;
-        if (dx * dx + dy * dy <= r * r) return p;
-      } else {
+    const pos = p.body.position;
+    if (p.type === 'wheel' || p.type === 'motor-wheel') {
+      const r = (p.body.circleRadius || 22) + 5; // extra margin
+      const dx = pos.x - x;
+      const dy = pos.y - y;
+      if (dx * dx + dy * dy <= r * r) return p;
+    } else {
+      // For rods, expand bounds slightly
+      const b = p.body.bounds;
+      const margin = 8;
+      if (x >= b.min.x - margin && x <= b.max.x + margin &&
+          y >= b.min.y - margin && y <= b.max.y + margin) {
         return p;
       }
     }
@@ -594,24 +773,34 @@ function onMouseDown(e) {
 
   if (isRunning) return;
 
-  if (currentTool === 'select') {
+  if (currentTool === 'delete') {
+    const part = findPartAt(pos.x, pos.y);
+    if (part) removePart(part);
+  } else if (currentTool === 'select') {
     const part = findPartAt(pos.x, pos.y);
     if (part) {
       draggedPart = part;
       dragOffset.x = part.body.position.x - pos.x;
       dragOffset.y = part.body.position.y - pos.y;
+      render.canvas.classList.add('dragging');
     }
   } else if (currentTool === 'rod') {
     if (isInBuildZone(pos.x, pos.y)) {
       rodStart = { x: pos.x, y: pos.y };
+    } else {
+      showToast('Click inside the Build Zone!');
     }
   } else if (currentTool === 'wheel') {
     if (isInBuildZone(pos.x, pos.y)) {
       addWheel(pos.x, pos.y, false);
+    } else {
+      showToast('Click inside the Build Zone!');
     }
   } else if (currentTool === 'motor-wheel') {
     if (isInBuildZone(pos.x, pos.y)) {
       addWheel(pos.x, pos.y, true);
+    } else {
+      showToast('Click inside the Build Zone!');
     }
   }
 }
@@ -626,10 +815,6 @@ function onMouseMove(e) {
     const nx = pos.x + dragOffset.x;
     const ny = pos.y + dragOffset.y;
     Body.setPosition(draggedPart.body, { x: nx, y: ny });
-    // Also move connected constraints
-    draggedPart.joints.forEach(j => {
-      // update constraint point if it anchors to this body
-    });
   }
 }
 
@@ -651,6 +836,7 @@ function onMouseUp(e) {
 
   if (currentTool === 'select') {
     draggedPart = null;
+    render.canvas.classList.remove('dragging');
   }
 }
 
@@ -664,6 +850,30 @@ function onRightClick(e) {
   }
 }
 
+// --- Touch support ---
+function touchToMouse(e) {
+  const touch = e.touches[0] || e.changedTouches[0];
+  return { clientX: touch.clientX, clientY: touch.clientY, button: 0 };
+}
+
+function onTouchStart(e) {
+  // Ignore multi-touch (pinch)
+  if (e.touches.length > 1) return;
+  e.preventDefault();
+  onMouseDown(touchToMouse(e));
+}
+
+function onTouchMove(e) {
+  if (e.touches.length > 1) return;
+  e.preventDefault();
+  onMouseMove(touchToMouse(e));
+}
+
+function onTouchEnd(e) {
+  e.preventDefault();
+  onMouseUp(touchToMouse(e));
+}
+
 // --- Part creation ---
 function addRod(x1, y1, x2, y2) {
   const cx = (x1 + x2) / 2;
@@ -674,6 +884,7 @@ function addRod(x1, y1, x2, y2) {
   const angle = Math.atan2(dy, dx);
 
   const body = Bodies.rectangle(cx, cy, len, 10, {
+    isStatic: true,  // Static during build mode
     render: {
       fillStyle: '#c89650',
       strokeStyle: '#a07030',
@@ -697,6 +908,7 @@ function addRod(x1, y1, x2, y2) {
 function addWheel(x, y, isMotor) {
   const radius = 22;
   const body = Bodies.circle(x, y, radius, {
+    isStatic: true,  // Static during build mode
     render: {
       fillStyle: isMotor ? '#7b2d8e' : '#3a3a5e',
       strokeStyle: isMotor ? '#a855c7' : '#5a5a7e',
@@ -722,11 +934,9 @@ function autoAttach(newPart, point) {
 
     // Find closest point on existing body to the given point
     const ep = existing.body.position;
-    const dist = Vector.magnitude(Vector.sub(point, ep));
 
     // For rods check endpoints too
     if (existing.type === 'rod') {
-      const verts = existing.body.vertices;
       // Check if point is near either end of the rod
       const rodLen = getBodyLength(existing.body);
       const angle = existing.body.angle;
@@ -753,6 +963,7 @@ function autoAttach(newPart, point) {
         createJoint(newPart, existing, closest);
       }
     } else {
+      const dist = Vector.magnitude(Vector.sub(point, ep));
       if (dist < threshold) {
         createJoint(newPart, existing, ep);
       }
@@ -856,15 +1067,22 @@ function toggleSimulation() {
 
 function startSimulation() {
   if (isRunning) return;
+  if (userParts.length === 0) {
+    showToast('Place some parts first!');
+    return;
+  }
   isRunning = true;
 
-  // Save positions for reset
+  // Save positions for reset, make dynamic
   userParts.forEach(p => {
     p.savedPos = { x: p.body.position.x, y: p.body.position.y };
     p.savedAngle = p.body.angle;
     Body.setStatic(p.body, false);
   });
+
+  // Make goal dynamic for simulation
   goalInitialPos = { x: goalBody.position.x, y: goalBody.position.y };
+  Body.setStatic(goalBody, false);
 
   runner = Runner.create();
   Runner.run(runner, engine);
@@ -894,21 +1112,20 @@ function resetSimulation() {
   document.getElementById('play-btn').classList.remove('running');
   document.getElementById('win-overlay').classList.remove('show');
 
-  // Restore positions
+  // Restore positions and make static again
   userParts.forEach(p => {
     if (p.savedPos) {
+      Body.setStatic(p.body, true);
       Body.setPosition(p.body, p.savedPos);
       Body.setAngle(p.body, p.savedAngle);
       Body.setVelocity(p.body, { x: 0, y: 0 });
       Body.setAngularVelocity(p.body, 0);
-      Body.setStatic(p.body, true);
-      // Immediately unset static so they're ready for next play
-      // Actually keep them static until play
     }
   });
 
-  // Reset goal
+  // Reset goal to static
   if (goalBody && goalInitialPos) {
+    Body.setStatic(goalBody, true);
     Body.setPosition(goalBody, goalInitialPos);
     Body.setVelocity(goalBody, { x: 0, y: 0 });
     Body.setAngularVelocity(goalBody, 0);
@@ -962,18 +1179,38 @@ function selectTool(tool) {
     el.classList.toggle('selected', el.dataset.tool === tool);
   });
 
+  // Update canvas cursor
+  const canvas = render.canvas;
+  canvas.className = 'tool-' + tool;
+
   const hint = document.getElementById('delete-hint');
-  hint.style.display = (tool === 'select') ? 'block' : 'none';
+  if (tool === 'delete') {
+    hint.textContent = 'Tap a part to delete it';
+    hint.style.display = 'block';
+  } else if (tool === 'select' && !isMobile()) {
+    hint.textContent = 'Right-click a part to delete it';
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 // --- Start ---
 window.addEventListener('load', init);
+
+let resizeTimer;
 window.addEventListener('resize', () => {
-  const container = document.getElementById('canvas-container');
-  render.canvas.width = container.clientWidth;
-  render.canvas.height = container.clientHeight;
-  render.options.width = container.clientWidth;
-  render.options.height = container.clientHeight;
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const { w: W, h: H } = getCanvasSize();
+    if (W <= 0 || H <= 0) return;
+    render.canvas.width = W;
+    render.canvas.height = H;
+    render.options.width = W;
+    render.options.height = H;
+    // Rebuild levels for new size
+    levels = buildLevels(W, H);
+  }, 100);
 });
 </script>
 </body>

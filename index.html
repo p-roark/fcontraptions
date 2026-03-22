@@ -2,21 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Fantastic Contraptions</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body {
+html, body {
   background: #1a1a2e;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   overflow: hidden;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   user-select: none;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
 }
 
+/* --- TOP BAR --- */
 #top-bar {
   display: flex;
   align-items: center;
@@ -25,26 +30,29 @@ body {
   background: #16213e;
   border-bottom: 2px solid #0f3460;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 #top-bar h1 {
   color: #e94560;
   font-size: 20px;
   letter-spacing: 1px;
+  white-space: nowrap;
 }
 
 #level-info {
   color: #a8a8b3;
   font-size: 14px;
+  white-space: nowrap;
 }
 
 #controls {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 #controls button {
-  padding: 8px 18px;
+  padding: 8px 16px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -53,125 +61,115 @@ body {
   transition: all 0.2s;
 }
 
-#play-btn {
-  background: #4ecca3;
-  color: #1a1a2e;
-}
+#play-btn { background: #4ecca3; color: #1a1a2e; }
 #play-btn:hover { background: #3db88a; }
-#play-btn.running { background: #e94560; }
+#play-btn.running { background: #e94560; color: #fff; }
 #play-btn.running:hover { background: #d63851; }
-
-#reset-btn {
-  background: #533483;
-  color: #fff;
-}
+#reset-btn { background: #533483; color: #fff; }
 #reset-btn:hover { background: #6b44a0; }
-
-#clear-btn {
-  background: #0f3460;
-  color: #a8a8b3;
-}
+#clear-btn { background: #0f3460; color: #a8a8b3; }
 #clear-btn:hover { background: #1a4a80; color: #fff; }
-
-#next-btn {
-  background: #e94560;
-  color: #fff;
-  display: none;
-}
+#next-btn { background: #e94560; color: #fff; display: none; }
 #next-btn:hover { background: #d63851; }
 
+/* --- MAIN AREA (desktop: sidebar left + canvas) --- */
 #main-area {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
+/* --- TOOLBAR (desktop: vertical sidebar) --- */
 #toolbar {
-  width: 180px;
+  width: 160px;
   background: #16213e;
   border-right: 2px solid #0f3460;
-  padding: 12px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 #toolbar h3 {
   color: #4ecca3;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .tool-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s;
   border: 2px solid transparent;
   color: #a8a8b3;
   font-size: 13px;
 }
-
-.tool-item:hover {
-  background: #1a2a50;
-  color: #fff;
-}
-
-.tool-item.selected {
-  border-color: #4ecca3;
-  background: #1a2a50;
-  color: #4ecca3;
-}
+.tool-item:hover { background: #1a2a50; color: #fff; }
+.tool-item.selected { border-color: #4ecca3; background: #1a2a50; color: #4ecca3; }
 
 .tool-icon {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
-  font-size: 18px;
+  font-size: 16px;
+  flex-shrink: 0;
 }
 
 .tool-item[data-tool="select"] .tool-icon { background: #2a2a4e; }
 .tool-item[data-tool="rod"] .tool-icon { background: #8b5e3c; }
 .tool-item[data-tool="wheel"] .tool-icon { background: #3a3a5e; }
 .tool-item[data-tool="motor-wheel"] .tool-icon { background: #5a3a6e; }
+.tool-item[data-tool="delete"] .tool-icon { background: #6b2030; }
+
+.tool-label { line-height: 1.2; }
+.tool-label small { opacity: 0.6; }
 
 #toolbar .help-text {
   color: #555;
   font-size: 11px;
-  line-height: 1.5;
+  line-height: 1.4;
   margin-top: auto;
-  padding: 8px;
+  padding: 6px;
   border-top: 1px solid #0f3460;
 }
 
+/* --- CANVAS --- */
 #canvas-container {
   flex: 1;
   position: relative;
+  min-width: 0;
+  min-height: 0;
 }
 
 canvas {
   display: block;
+  width: 100%;
+  height: 100%;
   cursor: crosshair;
 }
-
 canvas.tool-select { cursor: grab; }
 canvas.tool-select.dragging { cursor: grabbing; }
 canvas.tool-rod { cursor: crosshair; }
 canvas.tool-wheel { cursor: copy; }
 canvas.tool-motor-wheel { cursor: copy; }
+canvas.tool-delete { cursor: pointer; }
 
+/* --- OVERLAYS --- */
 #toast {
   display: none;
   position: absolute;
-  top: 50%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(233, 69, 96, 0.9);
@@ -182,6 +180,8 @@ canvas.tool-motor-wheel { cursor: copy; }
   z-index: 15;
   pointer-events: none;
   transition: opacity 0.3s;
+  text-align: center;
+  max-width: 80%;
 }
 
 #win-overlay {
@@ -192,34 +192,22 @@ canvas.tool-motor-wheel { cursor: copy; }
   z-index: 20;
   justify-content: center;
   align-items: center;
+  padding: 16px;
 }
-
-#win-overlay.show {
-  display: flex;
-}
+#win-overlay.show { display: flex; }
 
 #win-box {
   background: #16213e;
   border: 3px solid #4ecca3;
   border-radius: 16px;
-  padding: 40px 60px;
+  padding: 32px 40px;
   text-align: center;
+  max-width: 90vw;
 }
-
-#win-box h2 {
-  color: #4ecca3;
-  font-size: 36px;
-  margin-bottom: 12px;
-}
-
-#win-box p {
-  color: #a8a8b3;
-  font-size: 16px;
-  margin-bottom: 24px;
-}
-
+#win-box h2 { color: #4ecca3; font-size: 28px; margin-bottom: 10px; }
+#win-box p { color: #a8a8b3; font-size: 15px; margin-bottom: 20px; }
 #win-box button {
-  padding: 12px 32px;
+  padding: 12px 28px;
   background: #4ecca3;
   color: #1a1a2e;
   border: none;
@@ -227,13 +215,10 @@ canvas.tool-motor-wheel { cursor: copy; }
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  margin: 0 8px;
+  margin: 4px;
 }
 #win-box button:hover { background: #3db88a; }
-#win-box button.secondary {
-  background: #533483;
-  color: #fff;
-}
+#win-box button.secondary { background: #533483; color: #fff; }
 
 #delete-hint {
   display: none;
@@ -247,6 +232,85 @@ canvas.tool-motor-wheel { cursor: copy; }
   border-radius: 6px;
   font-size: 12px;
   z-index: 5;
+  white-space: nowrap;
+}
+
+/* ======================= */
+/* MOBILE LAYOUT (<= 768px) */
+/* ======================= */
+@media (max-width: 768px) {
+  body { height: 100dvh; }
+
+  #top-bar {
+    padding: 6px 10px;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  #top-bar h1 { font-size: 15px; }
+  #level-info { font-size: 12px; order: 3; width: 100%; text-align: center; margin-top: 2px; }
+  #controls { gap: 4px; }
+  #controls button { padding: 6px 10px; font-size: 12px; }
+
+  /* Stack: top-bar, canvas, toolbar(bottom) */
+  #main-area {
+    flex-direction: column;
+  }
+
+  /* Toolbar becomes horizontal bottom bar */
+  #toolbar {
+    width: 100%;
+    flex-direction: row;
+    border-right: none;
+    border-top: 2px solid #0f3460;
+    padding: 6px 8px;
+    gap: 4px;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    order: 2; /* put below canvas */
+  }
+  #toolbar h3 { display: none; }
+  #toolbar .help-text { display: none; }
+
+  .tool-item {
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px 10px;
+    font-size: 11px;
+    min-width: 56px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+  .tool-icon {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+  .tool-label small { display: none; }
+
+  #canvas-container {
+    order: 1; /* canvas above toolbar */
+  }
+
+  #delete-hint {
+    bottom: auto;
+    top: 8px;
+    font-size: 11px;
+    padding: 4px 12px;
+  }
+
+  #win-box { padding: 24px 20px; }
+  #win-box h2 { font-size: 24px; }
+  #win-box p { font-size: 14px; }
+  #win-box button { padding: 10px 20px; font-size: 14px; }
+}
+
+/* Very small phones */
+@media (max-width: 400px) {
+  #top-bar h1 { font-size: 13px; }
+  #controls button { padding: 5px 8px; font-size: 11px; }
+  .tool-item { padding: 5px 8px; min-width: 48px; font-size: 10px; }
+  .tool-icon { width: 32px; height: 32px; font-size: 16px; }
 }
 </style>
 </head>
@@ -266,24 +330,27 @@ canvas.tool-motor-wheel { cursor: copy; }
 <div id="main-area">
   <div id="toolbar">
     <h3>Tools</h3>
-    <div class="tool-item selected" data-tool="select" onclick="selectTool('select')">
+    <div class="tool-item" data-tool="select" onclick="selectTool('select')">
       <div class="tool-icon">&#9995;</div>
-      <div>Select<br><small>Move parts</small></div>
+      <div class="tool-label">Select<br><small>Move parts</small></div>
     </div>
-    <div class="tool-item" data-tool="rod" onclick="selectTool('rod')">
+    <div class="tool-item selected" data-tool="rod" onclick="selectTool('rod')">
       <div class="tool-icon">&#9644;</div>
-      <div>Rod<br><small>Click + drag</small></div>
+      <div class="tool-label">Rod<br><small>Drag to draw</small></div>
     </div>
     <div class="tool-item" data-tool="wheel" onclick="selectTool('wheel')">
       <div class="tool-icon">&#9711;</div>
-      <div>Wheel<br><small>Free spinning</small></div>
+      <div class="tool-label">Wheel<br><small>Free spin</small></div>
     </div>
     <div class="tool-item" data-tool="motor-wheel" onclick="selectTool('motor-wheel')">
       <div class="tool-icon">&#9881;</div>
-      <div>Motor Wheel<br><small>Powered CW</small></div>
+      <div class="tool-label">Motor<br><small>Powered</small></div>
+    </div>
+    <div class="tool-item" data-tool="delete" onclick="selectTool('delete')">
+      <div class="tool-icon">&#10005;</div>
+      <div class="tool-label">Delete<br><small>Tap part</small></div>
     </div>
     <div class="help-text">
-      Right-click a part to delete it.<br>
       Build on the green zone.<br>
       Move the red block to the blue target!
     </div>
@@ -403,12 +470,20 @@ function buildLevels(W, H) {
 
 let levels = [];
 
+// --- Helpers ---
+function isMobile() {
+  return window.innerWidth <= 768;
+}
+
+function getCanvasSize() {
+  const container = document.getElementById('canvas-container');
+  return { w: container.clientWidth, h: container.clientHeight };
+}
+
 // --- Init ---
 function init() {
   const canvas = document.getElementById('game-canvas');
-  const container = document.getElementById('canvas-container');
-  const W = container.clientWidth;
-  const H = container.clientHeight;
+  const { w: W, h: H } = getCanvasSize();
   canvas.width = W;
   canvas.height = H;
 
@@ -429,7 +504,7 @@ function init() {
       height: H,
       wireframes: false,
       background: '#1a1a2e',
-      pixelRatio: window.devicePixelRatio || 1,
+      pixelRatio: 1,
     }
   });
 
@@ -449,6 +524,10 @@ function init() {
   canvas.addEventListener('touchstart', onTouchStart, { passive: false });
   canvas.addEventListener('touchmove', onTouchMove, { passive: false });
   canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+
+  // Prevent pinch zoom on the whole page
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
 
   // Mark rod as selected in toolbar
   document.querySelectorAll('.tool-item').forEach(el => {
@@ -565,11 +644,12 @@ function customDraw() {
   if (!isRunning && userParts.length === 0) {
     ctx.save();
     ctx.fillStyle = 'rgba(168, 168, 179, 0.6)';
-    ctx.font = '16px sans-serif';
+    const mobile = isMobile();
+    ctx.font = (mobile ? '14' : '16') + 'px sans-serif';
     ctx.textAlign = 'center';
     const cx = buildZone ? buildZone.x + buildZone.w / 2 : render.options.width / 2;
     const cy = buildZone ? buildZone.y + buildZone.h / 2 : render.options.height / 2;
-    ctx.fillText('Click & drag here to draw rods', cx, cy - 10);
+    ctx.fillText(mobile ? 'Tap & drag here to draw rods' : 'Click & drag here to draw rods', cx, cy - 10);
     ctx.fillText('Then add wheels and press Play!', cx, cy + 14);
     ctx.restore();
   }
@@ -693,7 +773,10 @@ function onMouseDown(e) {
 
   if (isRunning) return;
 
-  if (currentTool === 'select') {
+  if (currentTool === 'delete') {
+    const part = findPartAt(pos.x, pos.y);
+    if (part) removePart(part);
+  } else if (currentTool === 'select') {
     const part = findPartAt(pos.x, pos.y);
     if (part) {
       draggedPart = part;
@@ -774,11 +857,14 @@ function touchToMouse(e) {
 }
 
 function onTouchStart(e) {
+  // Ignore multi-touch (pinch)
+  if (e.touches.length > 1) return;
   e.preventDefault();
   onMouseDown(touchToMouse(e));
 }
 
 function onTouchMove(e) {
+  if (e.touches.length > 1) return;
   e.preventDefault();
   onMouseMove(touchToMouse(e));
 }
@@ -1098,21 +1184,33 @@ function selectTool(tool) {
   canvas.className = 'tool-' + tool;
 
   const hint = document.getElementById('delete-hint');
-  hint.style.display = (tool === 'select') ? 'block' : 'none';
+  if (tool === 'delete') {
+    hint.textContent = 'Tap a part to delete it';
+    hint.style.display = 'block';
+  } else if (tool === 'select' && !isMobile()) {
+    hint.textContent = 'Right-click a part to delete it';
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
 }
 
 // --- Start ---
 window.addEventListener('load', init);
+
+let resizeTimer;
 window.addEventListener('resize', () => {
-  const container = document.getElementById('canvas-container');
-  const W = container.clientWidth;
-  const H = container.clientHeight;
-  render.canvas.width = W;
-  render.canvas.height = H;
-  render.options.width = W;
-  render.options.height = H;
-  // Rebuild levels for new size
-  levels = buildLevels(W, H);
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    const { w: W, h: H } = getCanvasSize();
+    if (W <= 0 || H <= 0) return;
+    render.canvas.width = W;
+    render.canvas.height = H;
+    render.options.width = W;
+    render.options.height = H;
+    // Rebuild levels for new size
+    levels = buildLevels(W, H);
+  }, 100);
 });
 </script>
 </body>
